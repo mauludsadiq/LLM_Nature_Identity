@@ -1,0 +1,5 @@
+# Pure-Python by default.
+# Kept minimal so the repo is frictionless.
+pytest>=8.0
+numpy>=1.24
+matplotlib>=3.7
