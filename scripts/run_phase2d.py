@@ -31,37 +31,33 @@ def _sample(preset, *, w: float, lam: float | None, seed: int) -> str:
     return " ".join(out)
 
 
-def _print_emergence_ladder(preset, seed: int = 0) -> None:
+def _print_axis_ladder(preset, *, seed: int = 0) -> None:
     target = " ".join(preset.full_expected)
 
-    ladder = [
-        ("BLANK (no basin, no constraint)", 0.0, None),
-        ("Soft constraint only (λ=2), no basin", 0.0, 2.0),
-        ("Weak basin only (w=2), no constraint", 2.0, None),
-        ("Weak basin + soft constraint (w=2, λ=2)", 2.0, 2.0),
-        ("Mid basin only (w=4), no constraint", 4.0, None),
-        ("Mid basin + soft constraint (w=4, λ=2)", 4.0, 2.0),
-        ("Strong basin only (w=6), no constraint", 6.0, None),
-        ("Strong basin + soft constraint (w=6, λ=0)", 6.0, 0.0),
-        ("FULL (very strong basin + hard-ish constraint)", 10.0, 32.0),
-    ]
-
     print("")
-    print("IDENTITY EMERGENCE (WATCH IT FORM)")
-    print("")
-    print("We hold the random seed fixed and gradually increase two forces:")
-    print("  w = basin depth (preference sculpt strength)")
-    print("  λ = constraint strength (soft topic lock penalty)")
+    print("IDENTITY EMERGENCE (AXIS-BY-AXIS, FIXED SEED)")
     print("")
     print(f"TARGET: {target}")
     print("")
-    for name, w, lam in ladder:
-        if lam is None:
-            tag = f"(w={w}, no constraint)"
-        else:
-            tag = f"(w={w}, λ={lam})"
-        out = _sample(preset, w=w, lam=lam, seed=seed)
-        print(f"{name:45s} {tag:18s} -> {out}")
+    print("We hold the random seed fixed and vary one control axis at a time.")
+    print("  w = basin depth (preference sculpt strength)")
+    print("  λ = constraint strength (soft topic lock penalty)")
+    print("")
+
+    print("A) Increase w (basin depth) with λ fixed = 0.0")
+    print("   Expectation: identity becomes preferred even without constraint as w grows.")
+    print("")
+    for w in [0.0, 0.5, 1.0, 2.0, 4.0, 6.0, 8.0, 10.0]:
+        out = _sample(preset, w=w, lam=0.0, seed=seed)
+        print(f"   w={w:>4}  λ=0.0  -> {out}")
+    print("")
+
+    print("B) Increase λ (constraint strength) with w fixed = 4.0")
+    print("   Expectation: constraint suppresses drift and forces topic coherence toward the identity string.")
+    print("")
+    for lam in [0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0]:
+        out = _sample(preset, w=4.0, lam=lam, seed=seed)
+        print(f"   w=4.0  λ={lam:>4} -> {out}")
     print("")
 
 
@@ -110,6 +106,19 @@ def _print_human_grid_report(report: dict, preset) -> None:
             print(f"  w={w}: λ*={lam_star}")
     print("")
 
+    print(f"PHASE TURN-ON (minimal w needed to get ≥{tau:.2f} lock rate, per λ)")
+    for i, lam in enumerate(lambdas):
+        w_star = None
+        for j, w in enumerate(weights):
+            if float(grid[i][j]) >= tau:
+                w_star = w
+                break
+        if w_star is None:
+            print(f"  λ={lam}: no lock at this sweep range")
+        else:
+            print(f"  λ={lam}: w*={w_star}")
+    print("")
+
 
 if __name__ == "__main__":
     preset = preset_identity_conscious_agent()
@@ -125,7 +134,7 @@ if __name__ == "__main__":
 
     report = run_phase_transition_2d(preset, cfg, out_dir="out/phase2d")
 
-    _print_emergence_ladder(preset, seed=0)
+    _print_axis_ladder(preset, seed=0)
     _print_human_grid_report(report, preset)
 
     print("WROTE: out/phase2d/phase_transition_2d.json")
