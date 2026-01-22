@@ -99,11 +99,20 @@ def parse_phrase(s: str) -> List[str]:
         return []
     return s.split()
 
-def lock_predicate_from_prompt(prompt: str) -> Tuple[List[str], str]:
-    prompt = prompt.strip()
-    if not prompt:
+def lock_predicate_from_prompt(prompt) -> Tuple[List[str], str]:
+    if prompt is None:
         return [], ""
-    return prompt.split(), prompt
+    if isinstance(prompt, list):
+        toks = [str(x) for x in prompt]
+        return toks, " ".join(toks)
+    if isinstance(prompt, dict):
+        if "text" in prompt:
+            return lock_predicate_from_prompt(prompt["text"])
+        return [], ""
+    s = str(prompt).strip()
+    if not s:
+        return [], ""
+    return s.split(), s
 
 def run():
     ap = argparse.ArgumentParser()
